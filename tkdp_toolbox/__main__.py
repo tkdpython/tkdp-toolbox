@@ -27,12 +27,51 @@ def main():
         help="Print commands without executing them.",
     )
 
+    # --- env-replace subcommand ---
+    env_replace_parser = subparsers.add_parser(
+        "env-replace",
+        help="Recursively replace environment-specific values in .md, .yaml, and .yml files.",
+    )
+    env_replace_parser.add_argument(
+        "--src-env",
+        required=True,
+        metavar="ENV",
+        help="Source environment key defined in .far.yml (values to find).",
+    )
+    env_replace_parser.add_argument(
+        "--dst-env",
+        required=True,
+        metavar="ENV",
+        help="Destination environment key defined in .far.yml (values to substitute).",
+    )
+    env_replace_parser.add_argument(
+        "--path",
+        type=Path,
+        default=None,
+        metavar="DIR",
+        help="Directory to start searching from (default: current directory).",
+    )
+    env_replace_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview replacements without modifying any files.",
+    )
+
     args = parser.parse_args()
 
     if args.command == "mirror":
         from tkdp_toolbox.mirror import run_mirror
 
         run_mirror(sources_path=args.sources, dry_run=args.dry_run)
+    elif args.command == "env-replace":
+        from tkdp_toolbox.env_replace import run_env_replace
+
+        run_env_replace(
+            src_env=args.src_env,
+            dst_env=args.dst_env,
+            search_path=args.path,
+            dry_run=args.dry_run,
+        )
     else:
         parser.print_help()
 

@@ -100,9 +100,71 @@ The `helm` value in `target-repo` must be in the form `<host>/<repository-name>`
 
 ---
 
+### `env-replace` — Recursively replace environment-specific values in files
+
+Reads a `.far.yml` configuration file and replaces all values belonging to the source environment with the corresponding values from the destination environment across every `.md`, `.yaml`, and `.yml` file under the config's directory.
+
+The tool walks up the directory tree from the working directory (or a specified `--path`) to locate the nearest `.far.yml` file.
+
+#### Usage
+
+```bash
+# Replace staging values with production values (searches for .far.yml from cwd)
+tkdptoolbox env-replace --src-env staging --dst-env production
+
+# Preview what would change without modifying any files
+tkdptoolbox env-replace --src-env staging --dst-env production --dry-run
+
+# Start the file search from a specific directory
+tkdptoolbox env-replace --src-env staging --dst-env production --path /path/to/project
+```
+
+#### `.far.yml` format
+
+```yaml
+environments:
+  <env-name>:
+    <KEY>: <value>
+    ...
+  <other-env-name>:
+    <KEY>: <value>
+    ...
+```
+
+Each top-level key under `environments` is an environment name. Keys within an environment map a logical variable name to the environment-specific string value. When replacing from `--src-env` to `--dst-env`, every source value found in a file is substituted with the matching destination value.
+
+#### Example `.far.yml`
+
+```yaml
+environments:
+  staging:
+    DB_HOST: db-staging.internal
+    API_URL: https://api-staging.example.com
+    REGISTRY: registry-staging.example.com
+
+  production:
+    DB_HOST: db.internal
+    API_URL: https://api.example.com
+    REGISTRY: registry.example.com
+```
+
+Running `tkdptoolbox env-replace --src-env staging --dst-env production` would replace:
+
+```
+db-staging.internal            →  db.internal
+https://api-staging.example.com  →  https://api.example.com
+registry-staging.example.com  →  registry.example.com
+```
+
+---
+
 ## Options reference
 
 | Command | Option | Description |
 |---|---|---|
 | `mirror` | `--sources FILE` | Path to `sources.yaml`. Defaults to `./sources.yaml`. |
 | `mirror` | `--dry-run` | Print all commands and API calls without executing them. |
+| `env-replace` | `--src-env ENV` | **(required)** Source environment key in `.far.yml` (values to find). |
+| `env-replace` | `--dst-env ENV` | **(required)** Destination environment key in `.far.yml` (values to substitute). |
+| `env-replace` | `--path DIR` | Directory to start the `.far.yml` search from. Defaults to the current directory. |
+| `env-replace` | `--dry-run` | Preview replacements without modifying any files. |
