@@ -17,6 +17,7 @@ classifiers = [
 
 [project.scripts]
 tkdp-toolbox = "tkdp_toolbox.__main__:main"
+tkdptoolbox = "tkdp_toolbox.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/tkdpython/tkdp-toolbox"
