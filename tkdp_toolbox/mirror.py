@@ -29,7 +29,6 @@ import tempfile
 from pathlib import Path
 
 import requests
-
 import yaml
 
 
@@ -85,8 +84,17 @@ def _mirror_chart(
     password: str,
     dry_run: bool = False,
 ) -> bool:
-    """Pull a Helm chart and upload it to a Nexus3 hosted Helm repository via curl."""
-    upload_url = f"https://{helm_target}/"
+    """Pull a Helm chart and upload it to a Nexus3 hosted Helm repository.
+
+    Uses the Nexus3 REST API endpoint:
+      POST /service/rest/v1/components?repository=<repo-name>
+    with the chart .tgz supplied as the `helm.asset` multipart field.
+
+    helm_target should be in the form `hostname/repo-name`
+    e.g. `repo.bcr.io/helm`
+    """
+    host, _, repo_name = helm_target.partition("/")
+    upload_url = f"https://{host}/service/rest/v1/components?repository={repo_name}"
     print(f"  -> chart: {chart} {version}")
     print(f"          → {upload_url}")
 
@@ -102,7 +110,7 @@ def _mirror_chart(
             return False
 
         if dry_run:
-            print(f"    $ curl -u {username}:*** -T {tmpdir}/{chart}-{version}.tgz {upload_url}")
+            print(f"    POST {upload_url} (helm.asset={chart}-{version}.tgz)")
             return True
 
         tgz_files = list(Path(tmpdir).glob("*.tgz"))
@@ -111,14 +119,12 @@ def _mirror_chart(
             return False
 
         tgz = tgz_files[0]
-        upload_url = f"{upload_url}{tgz.name}"
-        print(f"    PUT {upload_url}")
+        print(f"    POST {upload_url} (helm.asset={tgz.name})")
         with open(tgz, "rb") as f:
-            response = requests.put(
+            response = requests.post(
                 upload_url,
-                data=f,
+                files={"helm.asset": (tgz.name, f, "application/octet-stream")},
                 auth=(username, password),
-                headers={"Content-Type": "application/octet-stream"},
             )
         if not response.ok:
             print(f"  ERROR: upload failed ({response.status_code} {response.reason})", file=sys.stderr)
