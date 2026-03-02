@@ -122,38 +122,31 @@ tkdptoolbox env-replace --src-env staging --dst-env production --path /path/to/p
 #### `.far.yml` format
 
 ```yaml
-environments:
-  <env-name>:
-    <KEY>: <value>
-    ...
-  <other-env-name>:
-    <KEY>: <value>
-    ...
+- <src-env>: <value to find>
+  <dst-env>: <replacement value>
+- <src-env>: <another value to find>
+  <dst-env>: <another replacement value>
 ```
 
-Each top-level key under `environments` is an environment name. Keys within an environment map a logical variable name to the environment-specific string value. When replacing from `--src-env` to `--dst-env`, every source value found in a file is substituted with the matching destination value.
+The file is a YAML list. Each item is a mapping with environment names as keys and the environment-specific string as the value. When replacing from `--src-env` to `--dst-env`, every source value found in a file is substituted with the matching destination value.
 
 #### Example `.far.yml`
 
 ```yaml
-environments:
-  staging:
-    DB_HOST: db-staging.internal
-    API_URL: https://api-staging.example.com
-    REGISTRY: registry-staging.example.com
-
-  production:
-    DB_HOST: db.internal
-    API_URL: https://api.example.com
-    REGISTRY: registry.example.com
+- staging: db-staging.internal
+  production: db.internal
+- staging: https://api-staging.example.com
+  production: https://api.example.com
+- staging: registry-staging.example.com
+  production: registry.example.com
 ```
 
 Running `tkdptoolbox env-replace --src-env staging --dst-env production` would replace:
 
 ```
-db-staging.internal            →  db.internal
+db-staging.internal              →  db.internal
 https://api-staging.example.com  →  https://api.example.com
-registry-staging.example.com  →  registry.example.com
+registry-staging.example.com    →  registry.example.com
 ```
 
 ---

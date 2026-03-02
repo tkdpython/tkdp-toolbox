@@ -1,19 +1,15 @@
 # .far.yml — configuration for the tkdptoolbox env-replace command
 #
-# Define one entry per environment under the `environments` key.
-# Each environment maps variable names to their environment-specific values.
+# Each list item is a mapping of environment name to its specific value.
+# Items with the same logical meaning are grouped as a single entry.
 #
 # Run `tkdptoolbox env-replace --src-env <source> --dst-env <destination>` to
 # replace all source values with the corresponding destination values across
 # every .md, .yaml, and .yml file found under this directory.
 
-environments:
-  staging:
-    DB_HOST: db-staging.internal
-    API_URL: https://api-staging.example.com
-    REGISTRY: registry-staging.example.com
-
-  production:
-    DB_HOST: db.internal
-    API_URL: https://api.example.com
-    REGISTRY: registry.example.com
+- staging: db-staging.internal
+  production: db.internal
+- staging: https://api-staging.example.com
+  production: https://api.example.com
+- staging: registry-staging.example.com
+  production: registry.example.com

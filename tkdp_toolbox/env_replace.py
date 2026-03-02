@@ -1,22 +1,20 @@
 """Recursive environment find-and-replace tool.
 
 Performs batch find-and-replace operations across .md, .yaml, and .yml files
-using a configuration file (.far.yml) that defines per-environment value maps.
+using a configuration file (.far.yml) that defines a list of find-and-replace
+pairs keyed by environment name.
 
 The tool searches up the directory tree from the working directory to locate a
-.far.yml config file. The --src-env and --dst-env arguments select two named
-environments from that config; every value belonging to the source environment
-is replaced with the corresponding value from the destination environment.
+.far.yml config file. The --src-env and --dst-env arguments select two
+environment keys; every source value found in a file is replaced with the
+corresponding destination value.
 
-Example .far.yml:
+Example .far.yml::
 
-    environments:
-      staging:
-        DB_HOST: db-staging.internal
-        API_URL: https://api-staging.example.com
-      production:
-        DB_HOST: db.internal
-        API_URL: https://api.example.com
+    - staging: db-staging.internal
+      production: db.internal
+    - staging: https://api-staging.example.com
+      production: https://api.example.com
 
 Running with --src-env staging --dst-env production on a file containing
 "db-staging.internal" would replace it with "db.internal".
@@ -24,7 +22,7 @@ Running with --src-env staging --dst-env production on a file containing
 
 import sys
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import yaml
 
@@ -55,42 +53,42 @@ def _load_config(config_path: Path) -> dict:
         return yaml.safe_load(f) or {}
 
 
-def _build_replacements(config: dict, src_env: str, dst_env: str) -> Dict[str, str]:
+def _build_replacements(config: List[dict], src_env: str, dst_env: str) -> Dict[str, str]:
     """Return a mapping of {src_value: dst_value} for the given environment pair.
 
-    Raises SystemExit with a descriptive message if either environment key is
-    missing from the config.
+    Expects *config* to be a list of mappings, each containing at minimum the
+    *src_env* and *dst_env* keys.  Every entry where both keys are present is
+    added to the replacement map; entries missing either key are skipped with a
+    warning.
+
+    Raises SystemExit if *config* is not a list.
     """
-    environments: dict = config.get("environments", {})
-
-    if src_env not in environments:
-        available = ", ".join(environments.keys()) if environments else "(none)"
+    if not isinstance(config, list):
         print(
-            f"ERROR: source environment '{src_env}' not found in config. "
-            f"Available: {available}",
+            "ERROR: .far.yml must be a list of mappings. See the documentation for the expected format.",
             file=sys.stderr,
         )
         sys.exit(1)
 
-    if dst_env not in environments:
-        available = ", ".join(environments.keys()) if environments else "(none)"
-        print(
-            f"ERROR: destination environment '{dst_env}' not found in config. "
-            f"Available: {available}",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    src_vals: dict = environments[src_env]
-    dst_vals: dict = environments[dst_env]
-
-    replacements = {}  # type: Dict[str, str]
-    for key, src_value in src_vals.items():
-        dst_value = dst_vals.get(key)
+    replacements: Dict[str, str] = {}
+    for i, item in enumerate(config):
+        if not isinstance(item, dict):
+            print(
+                f"WARNING: item at index {i} in config is not a mapping — skipping.",
+                file=sys.stderr,
+            )
+            continue
+        src_value = item.get(src_env)
+        dst_value = item.get(dst_env)
+        if src_value is None:
+            print(
+                f"WARNING: key '{src_env}' missing from item at index {i} — skipping.",
+                file=sys.stderr,
+            )
+            continue
         if dst_value is None:
             print(
-                f"WARNING: key '{key}' present in '{src_env}' but missing from "
-                f"'{dst_env}' — skipping.",
+                f"WARNING: key '{dst_env}' missing from item at index {i} — skipping.",
                 file=sys.stderr,
             )
             continue
@@ -161,9 +159,7 @@ def run_env_replace(
 
     # Recursively collect target files relative to the config file's directory
     root = config_path.parent
-    target_files = [
-        p for p in root.rglob("*") if p.is_file() and p.suffix in _TARGET_EXTENSIONS
-    ]
+    target_files = [p for p in root.rglob("*") if p.is_file() and p.suffix in _TARGET_EXTENSIONS]
 
     print(f"\nScanning {len(target_files)} file(s) under {root} …\n")
 
