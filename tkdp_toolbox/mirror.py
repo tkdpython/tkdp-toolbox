@@ -27,6 +27,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from typing import List, Optional, Tuple
 
 import requests
 import yaml
@@ -37,7 +38,7 @@ def _load_sources(path: Path) -> dict:
         return yaml.safe_load(f)
 
 
-def _run(cmd: list[str], dry_run: bool = False) -> int:
+def _run(cmd: List[str], dry_run: bool = False) -> int:
     """Print and optionally execute a shell command. Returns the exit code."""
     print(f"    $ {' '.join(cmd)}")
     if dry_run:
@@ -46,7 +47,7 @@ def _run(cmd: list[str], dry_run: bool = False) -> int:
     return result.returncode
 
 
-def _prompt_helm_credentials(helm_target: str) -> tuple[str, str]:
+def _prompt_helm_credentials(helm_target: str) -> Tuple[str, str]:
     """Prompt for Nexus3 credentials and return (username, password)."""
     print(f"\nHelm charts require credentials for: {helm_target}")
     username = input("  Helm registry username: ")
@@ -133,7 +134,7 @@ def _mirror_chart(
     return True
 
 
-def run_mirror(sources_path: Path | None = None, dry_run: bool = False) -> None:
+def run_mirror(sources_path: Optional[Path] = None, dry_run: bool = False) -> None:
     """Entry point for the mirror command."""
     if sources_path is None:
         sources_path = Path.cwd() / "sources.yaml"
@@ -161,7 +162,7 @@ def run_mirror(sources_path: Path | None = None, dry_run: bool = False) -> None:
     if has_charts and helm_target:
         helm_user, helm_pass = _prompt_helm_credentials(helm_target)
 
-    failures: list[str] = []
+    failures: List[str] = []
 
     for group_name, group in groups.items():
         print(f"\n[{group_name}]")

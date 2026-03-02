@@ -24,6 +24,7 @@ Running with --src-env staging --dst-env production on a file containing
 
 import sys
 from pathlib import Path
+from typing import Dict, Optional
 
 import yaml
 
@@ -31,7 +32,7 @@ _CONFIG_FILENAME = ".far.yml"
 _TARGET_EXTENSIONS = {".md", ".yaml", ".yml"}
 
 
-def _find_config(start: Path) -> Path | None:
+def _find_config(start: Path) -> Optional[Path]:
     """Walk up the directory tree from *start* looking for .far.yml.
 
     Returns the first path found, or None if the file is not found before the
@@ -54,7 +55,7 @@ def _load_config(config_path: Path) -> dict:
         return yaml.safe_load(f) or {}
 
 
-def _build_replacements(config: dict, src_env: str, dst_env: str) -> dict[str, str]:
+def _build_replacements(config: dict, src_env: str, dst_env: str) -> Dict[str, str]:
     """Return a mapping of {src_value: dst_value} for the given environment pair.
 
     Raises SystemExit with a descriptive message if either environment key is
@@ -83,7 +84,7 @@ def _build_replacements(config: dict, src_env: str, dst_env: str) -> dict[str, s
     src_vals: dict = environments[src_env]
     dst_vals: dict = environments[dst_env]
 
-    replacements: dict[str, str] = {}
+    replacements = {}  # type: Dict[str, str]
     for key, src_value in src_vals.items():
         dst_value = dst_vals.get(key)
         if dst_value is None:
@@ -99,7 +100,7 @@ def _build_replacements(config: dict, src_env: str, dst_env: str) -> dict[str, s
     return replacements
 
 
-def _replace_in_file(path: Path, replacements: dict[str, str], dry_run: bool = False) -> int:
+def _replace_in_file(path: Path, replacements: Dict[str, str], dry_run: bool = False) -> int:
     """Apply *replacements* to the file at *path*.
 
     Returns the number of substitutions made (0 if the file was unchanged or
@@ -127,7 +128,7 @@ def _replace_in_file(path: Path, replacements: dict[str, str], dry_run: bool = F
 def run_env_replace(
     src_env: str,
     dst_env: str,
-    search_path: Path | None = None,
+    search_path: Optional[Path] = None,
     dry_run: bool = False,
 ) -> None:
     """Entry point for the env-replace command."""
