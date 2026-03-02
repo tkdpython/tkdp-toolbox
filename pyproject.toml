@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tkdp-toolbox"
+version = "0.1.0"
+description = "Swiss army knife toolbox for a devops engineer."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.scripts]
+tkdp-toolbox = "tkdp_toolbox.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/tkdpython/tkdp-toolbox"
