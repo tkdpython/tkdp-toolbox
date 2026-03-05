@@ -1,0 +1,12 @@
+# Example requirements.txt for dep-trace demonstration
+#
+# CVE-2024-23342 affects the 'ecdsa' package.
+# Running:
+#   tkdptoolbox dep-trace --requirements requirements.txt --package ecdsa
+# will reveal that python-jose pulls in ecdsa as a transitive dependency.
+
+fastapi==0.115.0
+python-jose==3.3.0
+requests==2.31.0
+pydantic==2.10.6
+uvicorn==0.34.0

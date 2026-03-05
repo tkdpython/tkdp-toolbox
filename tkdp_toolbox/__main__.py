@@ -57,6 +57,39 @@ def main():
         help="Preview replacements without modifying any files.",
     )
 
+    # --- dep-trace subcommand ---
+    dep_trace_parser = subparsers.add_parser(
+        "dep-trace",
+        help="Trace which requirement (or transitive dependency) pulls in a specific package.",
+    )
+    dep_trace_parser.add_argument(
+        "--requirements",
+        type=Path,
+        default=None,
+        metavar="FILE",
+        help="Path to requirements.txt (default: ./requirements.txt).",
+    )
+    dep_trace_parser.add_argument(
+        "--package",
+        required=True,
+        metavar="PACKAGE",
+        help="Package name to search for (e.g. ecdsa).",
+    )
+    dep_trace_parser.add_argument(
+        "--max-depth",
+        type=int,
+        default=6,
+        metavar="N",
+        help="Maximum dependency tree depth to search (default: 6).",
+    )
+    dep_trace_parser.add_argument(
+        "--pypi-url",
+        default=None,
+        metavar="URL",
+        help="Base URL of PyPI-compatible JSON API (default: https://pypi.org/pypi). "
+        "Use this to point at an internal Nexus PyPI proxy.",
+    )
+
     args = parser.parse_args()
 
     if args.command == "mirror":
@@ -71,6 +104,15 @@ def main():
             dst_env=args.dst_env,
             search_path=args.path,
             dry_run=args.dry_run,
+        )
+    elif args.command == "dep-trace":
+        from tkdp_toolbox.dep_trace import run_dep_trace
+
+        run_dep_trace(
+            requirements_path=args.requirements,
+            target_package=args.package,
+            max_depth=args.max_depth,
+            pypi_url=args.pypi_url,
         )
     else:
         parser.print_help()

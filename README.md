@@ -151,6 +151,53 @@ registry-staging.example.com    →  registry.example.com
 
 ---
 
+### `dep-trace` — Trace which dependency pulls in a vulnerable package
+
+Given a `requirements.txt` and a target package name, walks the dependency tree to find which top-level requirement (or chain of transitive dependencies) is responsible for pulling in that package.
+
+Useful when a vulnerability scanner (e.g. Trivy) flags a package CVE and you need to know which of your direct dependencies to upgrade or replace.
+
+Supports mixed environments where some packages are on an internal Nexus PyPI proxy and others are on public PyPI. When `--pypi-url` is provided, each package is looked up on the internal registry first, falling back to public PyPI automatically. Packages that cannot be resolved from either registry (internal-only packages with no PyPI-compatible JSON API) are flagged clearly at the end.
+
+#### Usage
+
+```bash
+# Search for the package that pulls in 'ecdsa' (CVE-2024-23342)
+tkdptoolbox dep-trace --package ecdsa
+
+# Specify a requirements file explicitly
+tkdptoolbox dep-trace --requirements /path/to/requirements.txt --package ecdsa
+
+# Use an internal Nexus PyPI proxy (tries Nexus first, falls back to pypi.org)
+tkdptoolbox dep-trace --package ecdsa --pypi-url https://repo.bcr.io/repository/pypi-public/pypi
+
+# Increase search depth for deeply nested dependency trees
+tkdptoolbox dep-trace --package ecdsa --max-depth 10
+```
+
+#### Example output
+
+```
+Scanning 'requirements.txt' for dependency chains leading to 'ecdsa'...
+Registry: https://repo.bcr.io/repository/pypi-public/pypi (falling back to https://pypi.org for packages not found internally)
+Max depth: 6
+
+  Checking nat_logger==1.2.0 ... not found
+  Checking fastapi==0.115.0 ... not found
+  Checking python_jose==3.3.0 ... FOUND  (1 chain(s))
+    python_jose==3.3.0  →  ecdsa
+  Checking requests==2.31.0 ... not found
+
+⚠  The following packages could not be resolved from any registry
+   (likely internal/private packages with no PyPI-compatible JSON API):
+   - nat_logger
+   Their transitive dependencies could not be checked.
+```
+
+In the above example, `python-jose` is the culprit — upgrading or replacing it resolves the CVE.
+
+---
+
 ## Options reference
 
 | Command | Option | Description |
@@ -161,3 +208,7 @@ registry-staging.example.com    →  registry.example.com
 | `env-replace` | `--dst-env ENV` | **(required)** Destination environment key in `.far.yml` (values to substitute). |
 | `env-replace` | `--path DIR` | Directory to start the `.far.yml` search from. Defaults to the current directory. |
 | `env-replace` | `--dry-run` | Preview replacements without modifying any files. |
+| `dep-trace` | `--package PACKAGE` | **(required)** Package name to search for (e.g. `ecdsa`). |
+| `dep-trace` | `--requirements FILE` | Path to `requirements.txt`. Defaults to `./requirements.txt`. |
+| `dep-trace` | `--pypi-url URL` | Base URL of a PyPI-compatible JSON API (e.g. internal Nexus proxy). Falls back to `pypi.org` if package not found. |
+| `dep-trace` | `--max-depth N` | Maximum dependency tree depth to search. Defaults to `6`. |
